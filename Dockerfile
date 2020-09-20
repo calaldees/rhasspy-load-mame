@@ -1,10 +1,19 @@
 FROM python:alpine as base
 
-ARG WORKDIR=/romcheck
+ARG WORKDIR=/romdata
 ENV WORKDIR=${WORKDIR}
 RUN mkdir -p ${WORKDIR}
 WORKDIR ${WORKDIR}
 ENV PYTHONPATH=.
+
+FROM base as code
+    COPY ./ ./
+
+FROM base as base_test
+    RUN pip3 install pytest
+FROM base_test as test
+    COPY --from=code ${WORKDIR} ./
+    RUN pytest --doctest-modules -p no:cacheprovider
 
 FROM base as romdata_xml
     RUN apk add \
@@ -24,9 +33,8 @@ FROM base as romdata_xml
     true
 
 FROM romdata_xml as romdata_data
-    COPY --from=code ${WORKDIR}/_common/roms.py ./_common/roms.py
-    COPY --from=code ${WORKDIR}/romdata/parse_mame_xml.py ./romdata/parse_mame_xml.py
+    COPY --from=code ${WORKDIR} ./
     # replace `>` with `| tee` to see output
     #  `&& zip roms.zip roms.txt` no real need for this - most of it is hash's which don't compress 29MB -> 12MB
     RUN set -o pipefail && \
-        python3 -m romdata.parse_mame_xml > roms.txt
+        python3 -m parse_mame_xml_names > mame.txt
