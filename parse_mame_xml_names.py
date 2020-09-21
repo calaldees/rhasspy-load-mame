@@ -1,19 +1,34 @@
+import os
 import re
 
 import xml.etree.ElementTree as ET
 from zipfile import ZipFile
 
-# copied from 
+
 def _zip_filehandle(filename):
     zipfile = ZipFile(filename)
     _filename = zipfile.namelist()[0]
     filehandle = zipfile.open(_filename)
     return filehandle
 
+def _zip_filehandles(zip_filename, files=frozenset()):
+    with ZipFile(zip_filename) as zipfile:
+        for _filename in zipfile.namelist():
+            if _filename.endswith('.xml') and (not files or _filename in files):
+                with zipfile.open(_filename) as filehandle:
+                    yield filehandle #from iter_software(lambda: filehandle)
+
 def _tag_iterator(iterparse, tag):
     for _, e in iterparse:
         if e.tag == tag:
             yield e
+
+def _find_recursively(element, func_select):
+    for child in element:
+        if func_select(child):
+            yield child
+        else:
+            yield from _find_recursively(child, func_select)
 
 
 EXCLUDE_SOURCEFILE = {
@@ -70,6 +85,54 @@ def iter_mame_names(get_xml_filehandle):
         )
 
 
+def iter_software_names(get_xml_filehandle):
+    r"""
+    >>> data = '''<?xml version="1.0"?>
+    ... <softwarelists>
+    ...     <softwarelist name="sms" description="Sega Master System cartridges">
+    ...         <software name="alexkidd">
+    ...                 <part name="cart" interface="sms_cart">
+    ...                         <dataarea name="rom">
+    ...                             <rom name="alex kidd in miracle world (usa, europe) (v1.1).bin" sha1="6d052e0cca3f2712434efd856f733c03011be41c"/>
+    ...                         </dataarea>
+    ...                 </part>
+    ...         </software>
+    ...         <software name="alexkidd1" cloneof="alexkidd">
+    ...                 <part name="cart" interface="sms_cart">
+    ...                         <dataarea name="rom">
+    ...                             <rom name="alex kidd in miracle world (usa, europe).bin" sha1="8cecf8ed0f765163b2657be1b0a3ce2a9cb767f4"/>
+    ...                             <rom test="no name in field list" />
+    ...                         </dataarea>
+    ...                 </part>
+    ...         </software>
+    ...     </softwarelist>
+    ... </softwarelists>'''.encode('utf8')
+    >>> from unittest.mock import MagicMock
+    >>> mock_filehandle = MagicMock()
+    >>> mock_filehandle.return_value.read.side_effect = (data, b'')
+    >>> tuple(iter_software_names(mock_filehandle))
+    (('alex kidd in miracle world (usa, europe) (v1.1).bin', 'sms/alexkidd'),)
+    """
+    callable(get_xml_filehandle)
+    iterparse = ET.iterparse(source=get_xml_filehandle(), events=('start', 'end'))
+    current_softwarelist = ''
+    for event, e in iterparse:
+        if event == 'start' and e.tag == 'softwarelist':
+            current_softwarelist = e.get('name')
+        if event == 'end' and e.tag == 'software':
+            for rom in _find_recursively(e, lambda e: e.tag == 'rom'):
+                if not rom.get('name'):
+                    # log.warning(f"software {e.get('name')} has a rom with no name?")
+                    continue
+                if e.get('cloneof'):  # no clone support for now
+                    continue
+                yield (
+                    rom.get('name'),
+                    os.path.join(current_softwarelist, e.get('name')),
+                )
+
+
+
 EXCLUDE_STR ={
     '(handheld',
     'mahjong',
@@ -80,6 +143,9 @@ EXCLUDE_STR ={
 def normalise_name(name):
     """
     >>> _n = normalise_name
+
+    >>> _n('alex kidd in miracle world (usa, europe) (v1.1).bin')
+    'alex kidd in miracle world'
     >>> _n('18 Wheeler (deluxe, Rev A)')
     '18 wheeler'
     >>> _n('Yam! Yam!?')
@@ -118,25 +184,29 @@ def normalise_name(name):
     for exclude_str in EXCLUDE_STR:
         if exclude_str in name:
             return None
-    name = re.sub(r"'", '', name)
-    name = re.sub(r'\(.*\)', '', name)
-    name = re.sub(r'&', 'and', name)
-    name = re.sub(r'\W', ' ', name)
-    name = re.sub(r' +', ' ', name)
-    name = re.sub(r' iii', ' three', name)
+    name = re.sub(r"(\..{1,4})$", '', name)  # Remove file extension
+    name = re.sub(r"'", '', name)  # remove single quotes
+    name = re.sub(r'\(.*\)', '', name)  # remove items in parenthesis
+    name = re.sub(r'&', 'and', name)  # replace & with and
+    name = re.sub(r'\W', ' ', name)  # remove all non-alpha-numeric characters
+    name = re.sub(r' +', ' ', name)  # compact multiple spaces down to a single space
+    name = re.sub(r' iii', ' three', name)  # replace roman numerals (CRUDE)
     name = re.sub(r' ii', ' two', name)
-    name = re.sub(r' vs ', ' versus ', name)
+    name = re.sub(r' vs ', ' versus ', name)  # replace pronunciation of versus
     name = name.strip()
     return name
 
-def main():
+def mame_names():
     for rom, name in iter_mame_names(lambda: _zip_filehandle('mamelx.zip')):
         name = normalise_name(name)
         if not name:
             continue
         print(f'{name}:{rom}')
 
+def software_list_names():
+    pass
+
 
 if __name__ == "__main__":
     #postmortem(main)
-    main()
+    mame_names()
