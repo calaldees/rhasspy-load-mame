@@ -32,10 +32,14 @@ def _find_recursively(element, func_select):
 
 
 EXCLUDE_SOURCEFILE = {
+    # Console multisystems
     'nss.cpp',
     'playch10.cpp',
     'vsnes.cpp',
     'megaplay.cpp',
+    'megatech.cpp',
+
+    # Casino games???
     'peplus.cpp',
     'aristmk6.cpp',
     'bfm_sc4.cpp',
@@ -45,6 +49,12 @@ EXCLUDE_SOURCEFILE = {
     'ecoinf2.cpp',
     'highvdeo.cpp',
     'mpu4vid.cpp',
+    'norautp.cpp',
+
+    #other?
+    'decocass.cpp',
+    'spg2xx_jakks.cpp',  # TV game?
+    'hh_hmcs40.cpp',  # LCD Donkey kong? coleco?
 }
 def iter_mame_names(get_xml_filehandle):
     r"""
@@ -62,6 +72,9 @@ def iter_mame_names(get_xml_filehandle):
     ...     <machine name="peip0028" sourcefile="peplus.cpp">
     ...         <description>Player's Edge Plus (IP0028) Joker Poker - French</description>
     ...     </machine>
+    ...     <machine name="machine" sourcefile="machine.cpp">
+    ...         <softwarelist tag="pc_disk_list" name="ibm5150" status="original"/>
+    ...     </machine>
     ... </mame>'''.encode('utf8')
     >>> from unittest.mock import MagicMock
     >>> mock_filehandle = MagicMock()
@@ -76,7 +89,8 @@ def iter_mame_names(get_xml_filehandle):
             machine.get('isdevice') == "yes" or \
             machine.get('runnable') == "no" or \
             machine.get('ismechanical') == "yes" or \
-            machine.get('sourcefile') in EXCLUDE_SOURCEFILE \
+            machine.get('sourcefile') in EXCLUDE_SOURCEFILE or \
+            isinstance(machine.find('softwarelist'), ET.Element)\
         :
             continue
         yield (
@@ -138,7 +152,8 @@ EXCLUDE_STR ={
     'mahjong',
     'casino',
     'jackpot',
-    'print club'
+    'print club',
+    'poker',
 }
 def normalise_name(name):
     """
