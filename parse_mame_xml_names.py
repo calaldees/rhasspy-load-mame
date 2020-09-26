@@ -201,7 +201,7 @@ def mame_names():
         name = normalise_name(name)
         if not name:
             continue
-        print(f'{name}:{rom}')
+        print(f'({name}):{rom}')
 
 def software_list_names():
     pass

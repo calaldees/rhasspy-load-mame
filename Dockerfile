@@ -13,7 +13,8 @@ FROM base as base_test
     RUN pip3 install pytest
 FROM base_test as test
     COPY --from=code ${WORKDIR} ./
-    RUN pytest --doctest-modules -p no:cacheprovider
+    RUN pytest --doctest-modules -p no:cacheprovider \
+        parse_mame_xml_names.py
 
 FROM base as romdata_xml
     RUN apk add \
