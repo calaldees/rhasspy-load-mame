@@ -37,7 +37,7 @@ class RhasspyIntentProcessor():
         pprint(data)
         if data['intent']['name'] == 'SystemTest':
             await self.mame(
-                '-rompath', '/home/pi/rapidseedbox/MAME 0.222 ROMs (merged)/',
+                '-rompath', '/home/pi/rapidseedbox/MAME 0.224 ROMs (merged)/',
                 '-window',
                 data['slots']['rom']
             )
