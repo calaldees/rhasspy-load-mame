@@ -185,6 +185,8 @@ def normalise_name(name):
     'touch and go'
     >>> _n("Player's Edge Plus (IP0028) Joker Poker - French")
     'players edge plus joker poker french'
+    >>> _n('Double Dragon (Neo-Geo)')
+    'double dragon neo geo'
     >>> _n('Robocop 2 (handheld)')
 
 
@@ -201,6 +203,7 @@ def normalise_name(name):
             return None
     name = re.sub(r"(\..{1,4})$", '', name)  # Remove file extension
     name = re.sub(r"'", '', name)  # remove single quotes
+    name = re.sub(r"\(neo[ -_]?geo.*\)", 'neo geo', name, flags=re.IGNORECASE)  # preserve neo geo in name
     name = re.sub(r'\(.*\)', '', name)  # remove items in parenthesis
     name = re.sub(r'&', 'and', name)  # replace & with and
     name = re.sub(r'\W', ' ', name)  # remove all non-alpha-numeric characters
