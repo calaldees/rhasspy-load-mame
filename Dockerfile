@@ -38,4 +38,8 @@ FROM romdata_xml as romdata_data
     # replace `>` with `| tee` to see output
     #  `&& zip roms.zip roms.txt` no real need for this - most of it is hash's which don't compress 29MB -> 12MB
     RUN set -o pipefail && \
-        python3 -m parse_mame_xml_names > mame.txt
+        python3 -m parse_mame_xml_names
+        # > mame.txt
+
+FROM base as romdata_output
+    COPY --from=romdata_data ${WORKDIR}/rhasspy ./

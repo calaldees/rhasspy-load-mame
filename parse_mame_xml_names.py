@@ -1,8 +1,12 @@
 import os
 import re
+import pathlib
 
 import xml.etree.ElementTree as ET
 from zipfile import ZipFile
+
+
+PATH_OUTPUT = 'rhasspy'
 
 
 def _zip_filehandle(filename):
@@ -98,20 +102,23 @@ def iter_mame_names(get_xml_filehandle):
             machine.find('description').text,
         )
 
-
-def iter_software_names(get_xml_filehandle):
+#def iter_software_names(get_xml_filehandle):
+def iter_software_names(filehandle):
     r"""
     >>> data = '''<?xml version="1.0"?>
     ... <softwarelists>
     ...     <softwarelist name="sms" description="Sega Master System cartridges">
     ...         <software name="alexkidd">
+    ...                 <description>Alex Kidd in Miracle World (Euro, USA, v1)</description>
     ...                 <part name="cart" interface="sms_cart">
     ...                         <dataarea name="rom">
     ...                             <rom name="alex kidd in miracle world (usa, europe) (v1.1).bin" sha1="6d052e0cca3f2712434efd856f733c03011be41c"/>
+    ...                             <rom name="some other rom.bin" sha1="xxx"/>
     ...                         </dataarea>
     ...                 </part>
     ...         </software>
     ...         <software name="alexkidd1" cloneof="alexkidd">
+    ...                 <description>Alex Kidd in Miracle World (Euro, USA, v0)</description>
     ...                 <part name="cart" interface="sms_cart">
     ...                         <dataarea name="rom">
     ...                             <rom name="alex kidd in miracle world (usa, europe).bin" sha1="8cecf8ed0f765163b2657be1b0a3ce2a9cb767f4"/>
@@ -123,27 +130,32 @@ def iter_software_names(get_xml_filehandle):
     ... </softwarelists>'''.encode('utf8')
     >>> from unittest.mock import MagicMock
     >>> mock_filehandle = MagicMock()
-    >>> mock_filehandle.return_value.read.side_effect = (data, b'')
+
+    #>>> mock_filehandle.return_value.read.side_effect = (data, b'')
+    >>> mock_filehandle.read.side_effect = (data, b'')
+
     >>> tuple(iter_software_names(mock_filehandle))
-    (('alex kidd in miracle world (usa, europe) (v1.1).bin', 'sms/alexkidd'),)
+    (('Alex Kidd in Miracle World (Euro, USA, v1)', 'sms/alexkidd'),)
     """
-    callable(get_xml_filehandle)
-    iterparse = ET.iterparse(source=get_xml_filehandle(), events=('start', 'end'))
+    #callable(get_xml_filehandle)
+    #iterparse = ET.iterparse(source=get_xml_filehandle(), events=('start', 'end'))
+    iterparse = ET.iterparse(source=filehandle, events=('start', 'end'))
     current_softwarelist = ''
     for event, e in iterparse:
         if event == 'start' and e.tag == 'softwarelist':
             current_softwarelist = e.get('name')
         if event == 'end' and e.tag == 'software':
-            for rom in _find_recursively(e, lambda e: e.tag == 'rom'):
-                if not rom.get('name'):
-                    # log.warning(f"software {e.get('name')} has a rom with no name?")
-                    continue
-                if e.get('cloneof'):  # no clone support for now
-                    continue
-                yield (
-                    rom.get('name'),
-                    os.path.join(current_softwarelist, e.get('name')),
-                )
+            #for rom in _find_recursively(e, lambda e: e.tag == 'rom'):
+            #    if not rom.get('name'):
+            #        # log.warning(f"software {e.get('name')} has a rom with no name?")
+            #        continue
+            if e.get('cloneof'):  # no clone support for now
+                continue
+            yield (
+                #rom.get('name'),
+                e.find('description').text,
+                os.path.join(current_softwarelist, e.get('name')),
+            )
 
 
 
@@ -154,13 +166,20 @@ EXCLUDE_STR ={
     'jackpot',
     'print club',
     'poker',
+    'bingo',
 }
 def normalise_name(name):
     """
     >>> _n = normalise_name
 
-    >>> _n('alex kidd in miracle world (usa, europe) (v1.1).bin')
+    # UNEEDED? We don't use ROM names
+    #>>> _n('alex kidd in miracle world (usa, europe) (v1.1).bin')
+    #'alex kidd in miracle world'
+    #>>> _n('animatix (infogrames) (j. pages, c. belin) (1985) (mo6 k7).k7')
+    #'animatix'
+    >>> _n('Alex Kidd in Miracle World (Euro, USA, v1)')
     'alex kidd in miracle world'
+
     >>> _n('18 Wheeler (deluxe, Rev A)')
     '18 wheeler'
     >>> _n('Yam! Yam!?')
@@ -183,12 +202,10 @@ def normalise_name(name):
     'wonder boy three monster lair'
     >>> _n('Touch & Go')
     'touch and go'
-    >>> _n("Player's Edge Plus (IP0028) Joker Poker - French")
-    'players edge plus joker poker french'
     >>> _n('Double Dragon (Neo-Geo)')
     'double dragon neo geo'
     >>> _n('Robocop 2 (handheld)')
-
+    >>> _n("Player's Edge Plus (IP0028) Joker Poker - French")
 
     Broken names with multiple titles - TODO
     >>> _n('Virtua Tennis 2 / Power Smash 2 (Rev A) (GDS-0015A)')
@@ -201,7 +218,7 @@ def normalise_name(name):
     for exclude_str in EXCLUDE_STR:
         if exclude_str in name:
             return None
-    name = re.sub(r"(\..{1,4})$", '', name)  # Remove file extension
+    #name = re.sub(r"(\..{1,4})$", '', name)  # Remove file extension
     name = re.sub(r"'", '', name)  # remove single quotes
     name = re.sub(r"\(neo[ -_]?geo.*\)", 'neo geo', name, flags=re.IGNORECASE)  # preserve neo geo in name
     name = re.sub(r'\(.*\)', '', name)  # remove items in parenthesis
@@ -214,17 +231,48 @@ def normalise_name(name):
     name = name.strip()
     return name
 
-def mame_names():
-    for rom, name in iter_mame_names(lambda: _zip_filehandle('mamelx.zip')):
-        name = normalise_name(name)
-        if not name:
-            continue
-        print(f'({name}):{rom}')
 
+def mame_names():
+    output_filename = os.path.join(PATH_OUTPUT, 'mame')
+    with open(output_filename, 'wt') as output_filehandle:
+        for rom, name in iter_mame_names(lambda: _zip_filehandle('mamelx.zip')):
+            name = normalise_name(name)
+            if not name:
+                continue
+            output_filehandle.write(f'({name}):{rom}\n')
+            #print(f'({name}):{rom}')
+
+
+SYSTEMS = {
+    'sms',
+    'megadriv',
+    'nes',
+    'snes',
+    'tg16',
+    'pce',
+    'a2600',
+    '32x',
+    'neogeo',
+}
 def software_list_names():
-    pass
+    for filehandle in _zip_filehandles('hash.zip'):
+        system_name = pathlib.Path(filehandle.name).stem
+        if system_name not in SYSTEMS:
+            continue
+        output_filename = os.path.join(PATH_OUTPUT, system_name)
+        with open(output_filename, 'wt') as output_filehandle:
+            for name, archive_filename in iter_software_names(filehandle):
+                name = normalise_name(name)
+                if not name:
+                    continue
+                output_filehandle.write(
+                    f'({name}):{archive_filename}\n'
+                )
+                #print()
 
 
 if __name__ == "__main__":
     #postmortem(main)
+    os.makedirs(PATH_OUTPUT, exist_ok=True)
     mame_names()
+    software_list_names()
