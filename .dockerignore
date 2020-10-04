@@ -2,7 +2,9 @@
 **/__pycache__/
 **/*.txt
 **/*.py[cod]
+history/
 
+Dockerfile
 Makefile
 LICENSE
 **/*.md

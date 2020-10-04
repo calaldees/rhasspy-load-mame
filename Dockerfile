@@ -7,7 +7,7 @@ WORKDIR ${WORKDIR}
 ENV PYTHONPATH=.
 
 FROM base as code
-    COPY ./ ./
+    COPY ./*.py ./
 
 FROM base as base_test
     RUN pip3 install pytest
@@ -41,5 +41,10 @@ FROM romdata_xml as romdata_data
         python3 -m parse_mame_xml_names
         # > mame.txt
 
-FROM base as romdata_output
-    COPY --from=romdata_data ${WORKDIR}/rhasspy ./
+#FROM base as romdata_output
+#    COPY --from=romdata_data ${WORKDIR}/slots/mame ./
+
+FROM rhasspy/rhasspy as rhasspy
+    COPY ./rhasspy/profiles/en/ /profiles/en/
+    COPY --from=romdata_data /romdata/slots/mame /profiles/en/slots/mame
+    CMD ["--user-profiles", "/profiles", "--profile", "en"]

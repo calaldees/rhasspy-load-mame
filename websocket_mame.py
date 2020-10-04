@@ -19,6 +19,7 @@ class RhasspyIntentProcessor():
             except ProcessLookupError:
                 pass
             self.process = None
+        #print(args)
         self.process = await asyncio.create_subprocess_exec(
             'mame',
             *args,
@@ -35,11 +36,11 @@ class RhasspyIntentProcessor():
 
     async def intent(self, data):
         pprint(data)
-        if data['intent']['name'] == 'SystemTest':
+        if data['intent']['name'] == 'Mame':
             await self.mame(
-                '-rompath', '/home/pi/rapidseedbox/MAME 0.224 ROMs (merged)/',
+                '-rompath', '/home/pi/rapidseedbox/MAME 0.224 ROMs (merged)/;/home/pi/rapidseedbox/MAME 0.224 Software List ROMs (merged)/',
                 '-window',
-                data['slots']['rom']
+                *data['slots']['rom'].split('/'),
             )
 
     async def listen_for_intent(self, uri):

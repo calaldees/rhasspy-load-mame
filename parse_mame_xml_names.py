@@ -6,7 +6,7 @@ import xml.etree.ElementTree as ET
 from zipfile import ZipFile
 
 
-PATH_OUTPUT = 'rhasspy'
+PATH_OUTPUT = 'slots/mame'
 
 
 def _zip_filehandle(filename):
@@ -233,7 +233,7 @@ def normalise_name(name):
 
 
 def mame_names():
-    output_filename = os.path.join(PATH_OUTPUT, 'mame')
+    output_filename = os.path.join(PATH_OUTPUT, 'roms')
     with open(output_filename, 'wt') as output_filehandle:
         for rom, name in iter_mame_names(lambda: _zip_filehandle('mamelx.zip')):
             name = normalise_name(name)
