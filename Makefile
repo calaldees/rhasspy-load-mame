@@ -25,7 +25,7 @@ test:
 	pytest --doctest-modules -p no:cacheprovider
 
 shell:
-	docker run --rm -it ${DOCKER_IMAGE} /bin/sh
+	docker run --rm -it --entrypoint /bin/bash ${DOCKER_IMAGE}
 
 run:
 	docker run \

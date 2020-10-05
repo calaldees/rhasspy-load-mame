@@ -184,10 +184,14 @@ def normalise_name(name):
     '18 wheeler'
     >>> _n('Yam! Yam!?')
     'yam yam'
+    >>> _n('1941: Counter Attack (World 900227)')
+    ''
     >>> _n('X-Men: Children of the Atom (Euro 950331)')
     'x men children of the atom'
     >>> _n('X-Men Vs. Street Fighter (Euro 961004)')
     'x men versus street fighter'
+    >>> _n('Spider-Man vs. the Kingpin (World)')
+    ''
     >>> _n('Vampire Savior 2: The Lord of Vampire (Japan 970913)')
     'vampire savior 2 the lord of vampire'
     >>> _n('U.S. Classic')
@@ -198,12 +202,16 @@ def normalise_name(name):
     'vindicators part two'
     >>> _n('World Rally 2: Twin Racing')
     'world rally 2 twin racing'
+    >>> _n('Wonder Boy III - The Dragon's Trap (Euro, USA, Kor)')
+    ''
     >>> _n('Wonder Boy III - Monster Lair (set 6, World, System 16B) (8751 317-0098)')
     'wonder boy three monster lair'
     >>> _n('Touch & Go')
     'touch and go'
     >>> _n('Double Dragon (Neo-Geo)')
     'double dragon neo geo'
+
+    Removed games
     >>> _n('Robocop 2 (handheld)')
     >>> _n("Player's Edge Plus (IP0028) Joker Poker - French")
 
@@ -212,6 +220,12 @@ def normalise_name(name):
     'virtua tennis 2 power smash 2'
     >>> _n('Xtreme Rally / Off Beat Racer!')
     'xtreme rally off beat racer'
+
+    >>> _n('Desert Strike - Return to the Gulf (Euro, USA)')
+    >>> _n('Shining Force - The Legacy of Great Intention (Euro)')
+    >>> _n('Star Trek - Deep Space Nine - Crossroads of Time (Euro)')
+    >>> _n('M.A.C.S. Basic Rifle Marksmanship (USA)')
+
 
     """
     name = name.lower()
