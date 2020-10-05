@@ -22,7 +22,8 @@ build:
 	.
 
 test:
-	pytest --doctest-modules -p no:cacheprovider
+	pytest --doctest-modules -p no:cacheprovider \
+		parse_mame_xml_names.py
 
 shell:
 	docker run --rm -it --entrypoint /bin/bash ${DOCKER_IMAGE}

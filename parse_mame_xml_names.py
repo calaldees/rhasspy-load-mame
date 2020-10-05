@@ -170,91 +170,109 @@ EXCLUDE_STR ={
 }
 def normalise_name(name):
     """
-    >>> _n = normalise_name
+    >>> _n = lambda name: sorted(normalise_name(name))
 
     # UNEEDED? We don't use ROM names
     #>>> _n('alex kidd in miracle world (usa, europe) (v1.1).bin')
     #'alex kidd in miracle world'
     #>>> _n('animatix (infogrames) (j. pages, c. belin) (1985) (mo6 k7).k7')
     #'animatix'
-    >>> _n('Alex Kidd in Miracle World (Euro, USA, v1)')
-    'alex kidd in miracle world'
 
+    >>> _n('Alex Kidd in Miracle World (Euro, USA, v1)')
+    ['alex kidd in miracle world']
     >>> _n('18 Wheeler (deluxe, Rev A)')
-    '18 wheeler'
+    ['18 wheeler']
     >>> _n('Yam! Yam!?')
-    'yam yam'
-    >>> _n('1941: Counter Attack (World 900227)')
-    ''
-    >>> _n('X-Men: Children of the Atom (Euro 950331)')
-    'x men children of the atom'
-    >>> _n('X-Men Vs. Street Fighter (Euro 961004)')
-    'x men versus street fighter'
-    >>> _n('Spider-Man vs. the Kingpin (World)')
-    ''
-    >>> _n('Vampire Savior 2: The Lord of Vampire (Japan 970913)')
-    'vampire savior 2 the lord of vampire'
+    ['yam yam']
     >>> _n('U.S. Classic')
-    'u s classic'
-    >>> _n('Venom & Spider-Man - Separation Anxiety (SNES bootleg)')
-    'venom and spider man separation anxiety'
+    ['u s classic']
     >>> _n('Vindicators Part II')
-    'vindicators part two'
-    >>> _n('World Rally 2: Twin Racing')
-    'world rally 2 twin racing'
-    >>> _n('Wonder Boy III - The Dragon's Trap (Euro, USA, Kor)')
-    ''
-    >>> _n('Wonder Boy III - Monster Lair (set 6, World, System 16B) (8751 317-0098)')
-    'wonder boy three monster lair'
+    ['vindicators part two']
     >>> _n('Touch & Go')
-    'touch and go'
+    ['touch and go']
+    >>> _n('M.A.C.S. Basic Rifle Marksmanship (USA)')
+    ['m a c s basic rifle marksmanship']
+
+    Multipart names
+    >>> _n('1941: Counter Attack (World 900227)')
+    ['1941', '1941 counter attack', 'counter attack']
+    >>> _n('X-Men: Children of the Atom (Euro 950331)')
+    ['children of the atom', 'x men', 'x men children of the atom']
+    >>> _n('Vampire Savior 2: The Lord of Vampire (Japan 970913)')
+    ['the lord of vampire', 'vampire savior 2', 'vampire savior 2 the lord of vampire']
+    >>> _n("Wonder Boy III - The Dragon's Trap (Euro, USA, Kor)")
+    ['the dragons trap', 'wonder boy three', 'wonder boy three the dragons trap']
+    >>> _n('Wonder Boy III - Monster Lair (set 6, World, System 16B) (8751 317-0098)')
+    ['monster lair', 'wonder boy three', 'wonder boy three monster lair']
+    >>> _n('Venom & Spider-Man - Separation Anxiety (SNES bootleg)')
+    ['separation anxiety', 'venom and spider man', 'venom and spider man separation anxiety']
+    >>> _n('Virtua Tennis 2 / Power Smash 2 (Rev A) (GDS-0015A)')
+    ['power smash 2', 'virtua tennis 2', 'virtua tennis 2 power smash 2']
+    >>> _n('Xtreme Rally / Off Beat Racer!')
+    ['off beat racer', 'xtreme rally', 'xtreme rally off beat racer']
+    >>> _n('Desert Strike - Return to the Gulf (Euro, USA)')
+    ['desert strike', 'desert strike return to the gulf', 'return to the gulf']
+    >>> _n('Shining Force - The Legacy of Great Intention (Euro)')
+    ['shining force', 'shining force the legacy of great intention', 'the legacy of great intention']
+    >>> _n('Star Trek - Deep Space Nine - Crossroads of Time (Euro)')
+    ['crossroads of time', 'deep space nine', 'star trek', 'star trek deep space nine crossroads of time']
+    >>> _n('World Rally 2: Twin Racing')
+    ['twin racing', 'world rally 2', 'world rally 2 twin racing']
+
+
+    Versus replacements
+    >>> _n('X-Men Vs. Street Fighter (Euro 961004)')
+    ['x men versus street fighter']
+    >>> _n('Spider-Man vs. the Kingpin (World)')
+    ['spider man versus the kingpin']
+
+    Special case
     >>> _n('Double Dragon (Neo-Geo)')
-    'double dragon neo geo'
+    ['double dragon neo geo']
 
     Removed games
     >>> _n('Robocop 2 (handheld)')
+    []
     >>> _n("Player's Edge Plus (IP0028) Joker Poker - French")
-
-    Broken names with multiple titles - TODO
-    >>> _n('Virtua Tennis 2 / Power Smash 2 (Rev A) (GDS-0015A)')
-    'virtua tennis 2 power smash 2'
-    >>> _n('Xtreme Rally / Off Beat Racer!')
-    'xtreme rally off beat racer'
-
-    >>> _n('Desert Strike - Return to the Gulf (Euro, USA)')
-    >>> _n('Shining Force - The Legacy of Great Intention (Euro)')
-    >>> _n('Star Trek - Deep Space Nine - Crossroads of Time (Euro)')
-    >>> _n('M.A.C.S. Basic Rifle Marksmanship (USA)')
-
+    []
 
     """
     name = name.lower()
+    # Abort on excluded keywords
     for exclude_str in EXCLUDE_STR:
         if exclude_str in name:
-            return None
+            return {}
     #name = re.sub(r"(\..{1,4})$", '', name)  # Remove file extension
     name = re.sub(r"'", '', name)  # remove single quotes
     name = re.sub(r"\(neo[ -_]?geo.*\)", 'neo geo', name, flags=re.IGNORECASE)  # preserve neo geo in name
     name = re.sub(r'\(.*\)', '', name)  # remove items in parenthesis
+    # Replacements
     name = re.sub(r'&', 'and', name)  # replace & with and
-    name = re.sub(r'\W', ' ', name)  # remove all non-alpha-numeric characters
-    name = re.sub(r' +', ' ', name)  # compact multiple spaces down to a single space
     name = re.sub(r' iii', ' three', name)  # replace roman numerals (CRUDE)
     name = re.sub(r' ii', ' two', name)
-    name = re.sub(r' vs ', ' versus ', name)  # replace pronunciation of versus
-    name = name.strip()
-    return name
+    name = re.sub(r' vs[. ]', ' versus ', name)  # replace pronunciation of versus
+
+    def clean(name):
+        # Tidy
+        name = re.sub(r'\W', ' ', name)  # replace all non-alpha-numeric characters with space
+        name = re.sub(r' +', ' ', name)  # compact multiple spaces down to a single space
+        name = name.strip()
+        return name
+
+    names = tuple(clean(n) for n in re.split(r': | / | - ', name))
+    return {*names, ' '.join(names)}
 
 
 def mame_names():
     output_filename = os.path.join(PATH_OUTPUT, 'roms')
     with open(output_filename, 'wt') as output_filehandle:
         for rom, name in iter_mame_names(lambda: _zip_filehandle('mamelx.zip')):
-            name = normalise_name(name)
-            if not name:
+            names = normalise_name(name)
+            if not names:
                 continue
-            output_filehandle.write(f'({name}):{rom}\n')
-            #print(f'({name}):{rom}')
+            for name in names:
+                output_filehandle.write(f'({name}):{rom}\n')
+                #print(f'({name}):{rom}')
 
 
 SYSTEMS = {
@@ -276,13 +294,14 @@ def software_list_names():
         output_filename = os.path.join(PATH_OUTPUT, system_name)
         with open(output_filename, 'wt') as output_filehandle:
             for name, archive_filename in iter_software_names(filehandle):
-                name = normalise_name(name)
-                if not name:
+                names = normalise_name(name)
+                if not names:
                     continue
-                output_filehandle.write(
-                    f'({name}):{archive_filename}\n'
-                )
-                #print()
+                for name in names:
+                    output_filehandle.write(
+                        f'({name}):{archive_filename}\n'
+                    )
+                    #print()
 
 
 if __name__ == "__main__":
