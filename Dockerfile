@@ -46,5 +46,6 @@ FROM romdata_xml as romdata_data
 
 FROM rhasspy/rhasspy as rhasspy
     COPY ./rhasspy/profiles/en/ /profiles/en/
-    COPY --from=romdata_data /romdata/slots/mame /profiles/en/slots/mame
+    COPY --from=romdata_data /romdata/slots/mame /_profiles/en/slots/mame
+    RUN ln -s /_profiles/en/slots/mame /profiles/en/slots/
     CMD ["--user-profiles", "/profiles", "--profile", "en"]
