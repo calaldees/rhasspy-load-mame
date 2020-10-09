@@ -41,8 +41,18 @@ class RhasspyIntentProcessor():
 
     async def intent(self, data):
         await self.volume_duck(False)
+        intent = data['intent']['name']
         pprint(data)
-        if data['intent']['name'] == 'Mame':
+        if intent == 'MameSearch':
+            print(
+                await self.cmd(
+                    'docker', 'exec',
+                    '--workdir', '/_profiles/en/slots/mame/',
+                    'rhasspy',
+                    'grep', '-r', ' '.join(data['raw_tokens'][1:]),
+                )
+            )
+        if intent == 'Mame':
             await self.mame(
                 '-rompath', '/home/pi/rapidseedbox/MAME 0.224 ROMs (merged)/;/home/pi/rapidseedbox/MAME 0.224 Software List ROMs (merged)/',
                 '-window',
@@ -51,12 +61,15 @@ class RhasspyIntentProcessor():
             )
 
     async def cmd(self, *args):
-        process = await asyncio.create_subprocess_exec(
-            *args,
-            stdout=asyncio.subprocess.PIPE,
-        )
-        stdout, _ = await process.communicate()
-        return stdout.decode('utf8')
+        try:
+            process = await asyncio.create_subprocess_exec(
+                *args,
+                stdout=asyncio.subprocess.PIPE,
+            )
+            stdout, _ = await process.communicate()
+            return stdout.decode('utf8')
+        except Exception as ex:
+            return str(ex)
 
     async def volume_duck(self, v):
         """

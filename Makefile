@@ -44,9 +44,5 @@ run:
 		-v "rhasspy_profiles:/profiles" \
 		--device /dev/snd:/dev/snd \
 		${DOCKER_IMAGE} \
-			
-		#
-		#--name rhasspy \
-		# 		--restart unless-stopped \
-		#--entrypoint /bin/sh \
-		#-it \
+		
+		# --restart unless-stopped \
