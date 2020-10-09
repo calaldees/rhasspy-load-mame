@@ -168,7 +168,7 @@ EXCLUDE_STR ={
     'poker',
     'bingo',
 }
-def normalise_name(name):
+def normalise_name(name: str) -> set[str]:
     """
     >>> _n = lambda name: sorted(normalise_name(name))
 
