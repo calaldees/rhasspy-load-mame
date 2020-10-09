@@ -1,6 +1,7 @@
 import os
 import re
 import pathlib
+from collections import defaultdict
 
 import xml.etree.ElementTree as ET
 from zipfile import ZipFile
@@ -84,7 +85,7 @@ def iter_mame_names(get_xml_filehandle):
     >>> mock_filehandle = MagicMock()
     >>> mock_filehandle.return_value.read.side_effect = (data, b'')
     >>> tuple(iter_mame_names(mock_filehandle))
-    (('18wheelr', '18 Wheeler (deluxe, Rev A)'),)
+    (('18 Wheeler (deluxe, Rev A)', '18wheelr'),)
     """
     assert callable(get_xml_filehandle)
     for machine in _tag_iterator(ET.iterparse(get_xml_filehandle()), 'machine'):
@@ -98,8 +99,8 @@ def iter_mame_names(get_xml_filehandle):
         :
             continue
         yield (
-            machine.get('name'),
             machine.find('description').text,
+            machine.get('name'),
         )
 
 #def iter_software_names(get_xml_filehandle):
@@ -263,19 +264,56 @@ def normalise_name(name: str) -> set[str]:
     return {*names, ' '.join(names)}
 
 
-def mame_names():
-    output_filename = os.path.join(PATH_OUTPUT, 'roms')
-    with open(output_filename, 'wt') as output_filehandle:
-        for rom, name in iter_mame_names(lambda: _zip_filehandle('mamelx.zip')):
-            names = normalise_name(name)
-            if not names:
-                continue
-            for name in names:
-                output_filehandle.write(f'({name}):{rom}\n')
-                #print(f'({name}):{rom}')
 
+def prune_names_to_rom(iter_names):
+    """
+    >>> iter_names = (
+    ...     ('Golden Axe (set 6, US, 8751 317-123A)', 'goldnaxe'),
+    ...     ('Golden Axe - The Duel (JUETL 950117 V1.000)', 'gaxeduel'),
+    ...     ('Golden Axe: The Revenge of Death Adder (World)', 'ga2'),
+    ... )
+    >>> prune_names_to_rom(iter_names)
+    {'golden axe': 'goldnaxe', 'golden axe the duel': 'gaxeduel', 'the duel': 'gaxeduel', 'golden axe the revenge of death adder': 'ga2', 'the revenge of death adder': 'ga2'}
+    """
+    rom_to_names = {
+        rom: normalise_name(name)
+        for name, rom in iter_names
+    }
+
+    name_to_roms = defaultdict(set)
+    for rom, names in rom_to_names.items():
+        for name in names:
+            name_to_roms[name].add(rom)
+
+    def lowest_name_count_for_rom(roms):
+        rom_name_count = {
+            rom: len(rom_to_names[rom])
+            for rom in roms
+        }
+        return min(rom_name_count, key=rom_name_count.get)
+    return {
+        name: lowest_name_count_for_rom(roms)
+        for name, roms in name_to_roms.items()
+    }
+
+def save_names(name_to_rom, output_filename):
+    with open(output_filename, 'wt') as output_filehandle:
+        for name, rom in name_to_rom.items():
+            output_filehandle.write(f'({name}):{rom}\n')
+
+
+
+def mame_names():
+    name_to_rom = prune_names_to_rom(
+        iter_mame_names(lambda: _zip_filehandle('mamelx.zip'))
+    )
+    save_names(
+        name_to_rom=name_to_rom,
+        output_filename=os.path.join(PATH_OUTPUT, 'roms'),
+    )
 
 SYSTEMS = {
+    'a2600',
     'sms',
     'megadriv',
     'nes',
@@ -291,17 +329,13 @@ def software_list_names():
         system_name = pathlib.Path(filehandle.name).stem
         if system_name not in SYSTEMS:
             continue
-        output_filename = os.path.join(PATH_OUTPUT, system_name)
-        with open(output_filename, 'wt') as output_filehandle:
-            for name, archive_filename in iter_software_names(filehandle):
-                names = normalise_name(name)
-                if not names:
-                    continue
-                for name in names:
-                    output_filehandle.write(
-                        f'({name}):{archive_filename}\n'
-                    )
-                    #print()
+        name_to_rom = prune_names_to_rom(
+            iter_software_names(filehandle)
+        )
+        save_names(
+            name_to_rom=name_to_rom,
+            output_filename=os.path.join(PATH_OUTPUT, system_name),
+        )
 
 
 if __name__ == "__main__":
