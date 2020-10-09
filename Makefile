@@ -28,16 +28,24 @@ test:
 shell:
 	docker run --rm -it --entrypoint /bin/bash ${DOCKER_IMAGE}
 
+search:
+	#docker run --rm --workdir /_profiles/en/slots/mame/ --entrypoint /bin/grep ${DOCKER_IMAGE} -r "golden"
+	docker exec \
+		--workdir /_profiles/en/slots/mame/ \
+		 rhasspy \
+		 grep -r \
+		 golden
+
 run:
-	docker run \
+	docker run --rm \
+		--name rhasspy \
 		-p 12101:12101 \
 		-v "/etc/localtime:/etc/localtime:ro" \
 		-v "rhasspy_profiles:/profiles" \
 		--device /dev/snd:/dev/snd \
-		--rm \
 		${DOCKER_IMAGE} \
 			
-
+		#
 		#--name rhasspy \
 		# 		--restart unless-stopped \
 		#--entrypoint /bin/sh \
