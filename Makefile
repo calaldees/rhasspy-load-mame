@@ -46,3 +46,8 @@ run:
 		${DOCKER_IMAGE} \
 		
 		# --restart unless-stopped \
+
+websocket:
+	# Wait for rhasspy port 12101
+	while ! nc -z localhost 12101 ; do sleep 1 ; done
+	python3 websocket_mame.py

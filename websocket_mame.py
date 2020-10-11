@@ -16,7 +16,7 @@ class RhasspyIntentProcessor():
     def __init__(self):
         self.process = None
 
-    async def mame(self, *args):
+    def close_mame(self):
         if self.process:
             try:
                 self.process.kill()
@@ -24,20 +24,16 @@ class RhasspyIntentProcessor():
             except ProcessLookupError:
                 pass
             self.process = None
+
+    async def mame(self, *args):
+        self.close_mame()
         #print(args)
         self.process = await asyncio.create_subprocess_exec(
             'mame',
             *args,
             stdout=asyncio.subprocess.PIPE,
         )
-        #stdout, _ = await proc.communicate()
-        #print(1)
-        #async for line in process.stdout:
-        #    print(line)
-        #print(2)
-        #process.kill()
-        #print(3)
-        #return await process.wait()
+
 
     async def intent(self, data):
         await self.volume_duck(False)
@@ -52,13 +48,15 @@ class RhasspyIntentProcessor():
                     'grep', '-r', ' '.join(data['raw_tokens'][1:]),
                 )
             )
-        if intent == 'Mame':
+        if intent == 'MameLoad':
             await self.mame(
                 '-rompath', '/home/pi/rapidseedbox/MAME 0.224 ROMs (merged)/;/home/pi/rapidseedbox/MAME 0.224 Software List ROMs (merged)/',
                 '-window',
                 '-skip_gameinfo',
                 *data['slots']['rom'].split('/'),
             )
+        if intent == 'MameExit':
+            self.close_mame()
 
     async def cmd(self, *args):
         try:
