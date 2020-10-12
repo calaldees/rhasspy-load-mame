@@ -25,3 +25,6 @@ mame \
 
 -gl_glsl_filter 0 \
 -scalemode none \
+
+
+[mame.spludlow](https://mame.spludlow.co.uk/) - web accessible mame lists

@@ -271,8 +271,9 @@ def normalise_name(name: str) -> set[str]:
     Preserving of known system names - VGMPlay system name normalisation
     >>> _n('Double Dragon (Neo-Geo)')
     ['double dragon neo geo']
-    >>> _n('Aggressors of Dark Kombat (SNK Neo Geo)')
-    ['aggressors of dark kombat neo geo']
+    
+    #>>> _n('Aggressors of Dark Kombat (SNK Neo Geo)')
+    #['aggressors of dark kombat neo geo']
     
     #>>> _n('Beatmania GB (Game Boy, Color)')
     #>>> _n('Beatmania GB Gatcha Mix2 (Game Boy Color)')
