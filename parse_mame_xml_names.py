@@ -80,6 +80,9 @@ def iter_mame_names(get_xml_filehandle):
     ...     <machine name="machine" sourcefile="machine.cpp">
     ...         <softwarelist tag="pc_disk_list" name="ibm5150" status="original"/>
     ...     </machine>
+    ...     <machine name="sfa3b" sourcefile="cps2.cpp" cloneof="sfa3" romof="sfa3">.
+    ...         <description>Street Fighter Alpha 3 (Brazil 980629)</description>.
+    ...     </machine>
     ... </mame>'''.encode('utf8')
     >>> from unittest.mock import MagicMock
     >>> mock_filehandle = MagicMock()
@@ -159,6 +162,38 @@ def iter_software_names(filehandle):
             )
 
 
+"""
+<softwarelist name="vgmplay" description="Video Game Music Files">
+    <software name="lemmings_pc">
+        <description>Lemmings DOS</description>
+        <part name="001" interface="vgm_quik">
+                <feature name="part_id" value="00_lets_go.vgm" />
+        </part>
+    </software>
+    <software name="lemmings_nes">
+        <description>Lemmings (NES)</description>
+        <part name="001" interface="vgm_quik">
+                <feature name="part_id" value="01 title screen.vgz" />
+        </part>
+    </software>
+    <software name="lemmings_zxs">
+            <description>Lemmings (ZX Spectrum 128)</description>
+    </software>
+    <software name="lemmings_t1k">
+            <description>Lemmings Series (Tandy 1000)</description>
+    </software>
+    <software name="lemmings">
+            <description>Lemmings (Arcade)</description>
+    </softare>
+    <software name="lemmings_md">
+            <description>Lemmings (GEN/MD)</description>
+    </softare>
+    <software name="lemmings_sms">
+            <description>Lemmings (SMS)</description>
+    </software>
+</softwarelists>
+"""
+
 
 EXCLUDE_STR ={
     '(handheld',
@@ -227,15 +262,58 @@ def normalise_name(name: str) -> set[str]:
     >>> _n('Spider-Man vs. the Kingpin (World)')
     ['spider man versus the kingpin']
 
-    Special case
-    >>> _n('Double Dragon (Neo-Geo)')
-    ['double dragon neo geo']
-
     Removed games
     >>> _n('Robocop 2 (handheld)')
     []
     >>> _n("Player's Edge Plus (IP0028) Joker Poker - French")
     []
+
+    Preserving of known system names - VGMPlay system name normalisation
+    >>> _n('Double Dragon (Neo-Geo)')
+    ['double dragon neo geo']
+    >>> _n('Aggressors of Dark Kombat (SNK Neo Geo)')
+    ['aggressors of dark kombat neo geo']
+    
+    #>>> _n('Beatmania GB (Game Boy, Color)')
+    #>>> _n('Beatmania GB Gatcha Mix2 (Game Boy Color)')
+    #>>> _n('Blaster Master - Enemy Below (Nintendo Game Boy Color)')
+    #>>> _n('Bomberman Collection (1996)(Hudson) (GameBoy)')
+    #>>> _n('10-Yard Fight (NES)')
+    #>>> _n('Beavis And Butt Head (GG)')
+
+    Bear a Grudge (ZX Spectrum 128)
+    Battle Squadron (GEN/MD)
+
+    Battle Ace (PC Engine SuperGrafx)
+    Batman (TG-16)
+    Kaze no Densetsu Xanadu II (TG-CD)
+    Nobunaga no Yabou - Bushou Fuunroku (PCE Super CD-ROM2)
+
+    688 Attack Sub (IBM PC XT AT Tandy 1000)
+    Alley Cat (IBM PCjr)
+    Star Wars - X-Wing (IBM PC AT)
+
+    Altered Beast (SMS-FM)
+    Altered Beast (SMS-PSG)
+
+    Antarctic Adventure (MSX)
+    Antarctic Adventure (ColecoVision)
+    After Burner II (Sharp X68000)
+    SimCity 2000 (FM Towns)
+    Vertical Force (Nintendo Virtual Boy)
+
+    Ultima IV - Quest of the Avatar (Apple II)
+    Star Wars - The Empire Strikes Back (NES)
+    Street Fighter Alpha 3, Zero 3 (CP System II)
+    NHL All-Star Hockey '95 (GEN/MD)
+    Ristar - The Shooting Star (GEN/MD)
+    Ristar The Shooting Star (GG)
+    Parasol Stars - The Story of Bubble Bobble III (TG-16)
+
+    Star Ship Rendezvous (MSX2)
+    Sonyc (MSX2 FM)
+    Sonyc (MSX2 Moonsound)
+    Star Force (MSX)
 
     """
     name = name.lower()
