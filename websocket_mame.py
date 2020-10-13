@@ -1,8 +1,8 @@
 import asyncio
 import json
-import os.path
+import os
 import re
-from pprint import pprint
+import pprint
 
 import websockets  # https://pypi.org/project/websockets/
 
@@ -10,64 +10,84 @@ import logging
 log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
+MAME_CMD_pi = (
+    'mame',
+    '-rompath', '/home/pi/rapidseedbox/MAME 0.224 ROMs (merged)/;/home/pi/rapidseedbox/MAME 0.224 Software List ROMs (merged)/',
+    '-window',
+    '-skip_gameinfo',
+)
+MAME_CMD_groovyarcade = (
+    'groovymame',
+)
+
+MAME_CMD = MAME_CMD_pi
+
+
 
 class RhasspyIntentProcessor():
 
     def __init__(self):
-        self.process = None
+        self.process_mame = None
 
     def close_mame(self):
-        if self.process:
+        if self.process_mame:
             try:
-                self.process.kill()
-                self.process.wait()
+                self.process_mame.kill()
+                self.process_mame.wait()
             except ProcessLookupError:
                 pass
-            self.process = None
+            self.process_mame = None
 
     async def mame(self, *args):
         self.close_mame()
-        #print(args)
-        self.process = await asyncio.create_subprocess_exec(
-            'mame',
-            *args,
-            stdout=asyncio.subprocess.PIPE,
-        )
+        self.process_mame = await asyncio.create_subprocess_exec(*MAME_CMD, *args, stdout=asyncio.subprocess.PIPE)
 
+    async def search(self, *args):
+        await self.cmd(
+            'docker', 'exec',
+            '--workdir', '/_profiles/en/slots/mame/',
+            'rhasspy',
+            'grep', '-r', ' '.join(args),
+        )
 
     async def intent(self, data):
         await self.volume_duck(False)
+        log.debug(pprint.pformat(data))
+        os.system('cls||clear')  # clear terminal screen
+        print(' '.join(data['raw_tokens']))
+
         intent = data['intent']['name']
-        pprint(data)
         if intent == 'MameSearch':
-            print(
-                await self.cmd(
-                    'docker', 'exec',
-                    '--workdir', '/_profiles/en/slots/mame/',
-                    'rhasspy',
-                    'grep', '-r', ' '.join(data['raw_tokens'][1:]),
-                )
-            )
+            print()
+            print(await self.search(*data['raw_tokens'][1:]))
         if intent == 'MameLoad':
-            await self.mame(
-                '-rompath', '/home/pi/rapidseedbox/MAME 0.224 ROMs (merged)/;/home/pi/rapidseedbox/MAME 0.224 Software List ROMs (merged)/',
-                '-window',
-                '-skip_gameinfo',
-                *data['slots']['rom'].split('/'),
-            )
+            print(data['slots']['rom'])
+            await self.mame(*data['slots']['rom'].split('/'))
         if intent == 'MameExit':
             self.close_mame()
+            #self.reset_resolution()
 
     async def cmd(self, *args):
         try:
-            process = await asyncio.create_subprocess_exec(
-                *args,
-                stdout=asyncio.subprocess.PIPE,
-            )
+            process = await asyncio.create_subprocess_exec(*args, stdout=asyncio.subprocess.PIPE)
             stdout, _ = await process.communicate()
             return stdout.decode('utf8')
         except Exception as ex:
             return str(ex)
+
+    async def reset_resolution(self):
+        # https://mme4crt.alphanudesign.co.uk/forum/showthread.php?tid=5
+        process = await asyncio.create_subprocess_shell('''
+            output="$(xrandr | grep " connected" | awk '{print$1})" && \
+            xrandr --newmode "700x480_59.941002" 13.849698 700 742 801 867 480 490 496 533 interlace -hsync -vsync && \
+            xrandr --addmode $output 700x480_59.941002 && \
+            xrandr --output $output --mode 700x480_59.941002 
+            ''',
+            stdout=asyncio.subprocess.PIPE,
+            #stderr=asyncio.subprocess.PIPE,
+        )
+        stdout, _ = await process.communicate()
+        return stdout.decode('utf8')
 
     async def volume_duck(self, v):
         """
@@ -81,7 +101,7 @@ class RhasspyIntentProcessor():
         if not match:
             log.debug('Unable to list ALSA devices?')
             return
-        log.info(f'duck {v}')
+        log.debug(f'duck {v}')
         await self.cmd('amixer', 'sset', match.group(1), '50%' if v else '100%')
 
 
@@ -96,6 +116,7 @@ class RhasspyIntentProcessor():
             log.info(uri)
             while True:
                 await websocket.recv()
+                print('wakeup')
                 await self.volume_duck(True)
 
     async def run(self, url):
@@ -111,10 +132,4 @@ class RhasspyIntentProcessor():
 
 if __name__ == '__main__':
     rhasspy = RhasspyIntentProcessor()
-    asyncio.run(
-        rhasspy.run('ws://localhost:12101/')
-        #await asyncio.gather(
-        #    rhasspy.listen_for_intent('ws://localhost:12101/api/events/intent'),
-        #    rhasspy.listen_for_intent('ws://localhost:12101/api/events/wake'),
-        #)
-    )
+    asyncio.run(rhasspy.run('ws://localhost:12101/'))
