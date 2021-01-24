@@ -10,18 +10,21 @@ import logging
 log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
-MAME_CMD_pi = (
-    'mame',
-    '-rompath', '/home/pi/rapidseedbox/MAME 0.224 ROMs (merged)/;/home/pi/rapidseedbox/MAME 0.224 Software List ROMs (merged)/',
-    '-window',
-    '-skip_gameinfo',
-)
-MAME_CMD_groovyarcade = (
-    'groovymame',
-)
 
-MAME_CMD = MAME_CMD_pi
+CONFIG_PI = {
+    'cmd_mame': (
+        'mame',
+        '-rompath', '/home/pi/rapidseedbox/MAME 0.227 ROMs (merged)/;/home/pi/rapidseedbox/MAME 0.227 Software List ROMs (merged)/',
+        '-window',
+        '-skip_gameinfo',
+    ),
+}
 
+CONFIG = {
+    'cmd_mame': ('groovymame', ),
+    'cmd_duck': ('amixer', 'sset', 'Master'),
+    'cmd_mame_exit': ('xdotool', 'key', 'Escape'),
+}
 
 
 class RhasspyIntentProcessor():
@@ -31,16 +34,19 @@ class RhasspyIntentProcessor():
 
     def close_mame(self):
         if self.process_mame:
-            try:
-                self.process_mame.kill()
-                self.process_mame.wait()
-            except ProcessLookupError:
-                pass
+            if CONFIG.get('cmd_mame_exit'):  # If we have an explicit command to run to quit MAME, use that in preference - else just kill the process
+                self.cmd(CONFIG.get('cmd_mame_exit'))
+            else:
+                try:
+                    self.process_mame.kill()
+                    self.process_mame.wait()
+                except ProcessLookupError:
+                    pass
             self.process_mame = None
 
     async def mame(self, *args):
         self.close_mame()
-        self.process_mame = await asyncio.create_subprocess_exec(*MAME_CMD, *args, stdout=asyncio.subprocess.PIPE)
+        self.process_mame = await asyncio.create_subprocess_exec(*CONFIG['cmd_mame'], *args, stdout=asyncio.subprocess.PIPE)
 
     async def search(self, *args):
         await self.cmd(
@@ -69,6 +75,7 @@ class RhasspyIntentProcessor():
 
     async def cmd(self, *args):
         try:
+            log.debug(f'cmd: {args}')
             process = await asyncio.create_subprocess_exec(*args, stdout=asyncio.subprocess.PIPE)
             stdout, _ = await process.communicate()
             return stdout.decode('utf8')
@@ -96,13 +103,19 @@ class RhasspyIntentProcessor():
         Simple mixer control 'Bose QuietComfort 35 - SCO',0
 
         amixer sset 'Bose QuietComfort 35 - A2DP' 100%
+
+        TODO: This is compicated for multiple audio devices - I need a good way of findind the default playback master volume
+        For now we can explicitly provide a duck command for the specific machine
         """
-        match = re.search(r"'(.*)'", await self.cmd('amixer', 'scontrols'))
-        if not match:
-            log.debug('Unable to list ALSA devices?')
-            return
+        cmd_duck = CONFIG.get('cmd_duck')
+        if not cmd_duck:
+            match = re.search(r"'(.*)'", await self.cmd('amixer', 'scontrols'))
+            if not match:
+                log.debug('Unable to list ALSA devices?')
+                return
+            cmd_duck = ('amixer', 'sset', match.group(1))
         log.debug(f'duck {v}')
-        await self.cmd('amixer', 'sset', match.group(1), '50%' if v else '100%')
+        await self.cmd(*cmd_duck ,'50%' if v else '100%')
 
 
     async def listen_for_intent(self, uri):
