@@ -1,3 +1,6 @@
+#!make
+include .env
+
 DOCKER_IMAGE:=mame_voice
 
 help:
@@ -18,7 +21,7 @@ rhasspy_example:  # https://rhasspy.readthedocs.io/en/latest/installation/#docke
 build:
 	docker build \
 		--tag ${DOCKER_IMAGE} \
-		--build-arg MAME_GIT_TAG=mame0222 \
+		--build-arg MAME_GIT_TAG=${MAME_GIT_TAG} \
 	.
 
 test:
