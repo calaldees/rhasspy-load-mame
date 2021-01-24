@@ -22,7 +22,7 @@ CONFIG_PI = {
 
 CONFIG = {
     'cmd_mame': ('groovymame', ),
-    'cmd_duck': ('amixer', 'sset', 'Master'),
+    'cmd_duck': ('amixer', 'sset', '-c', '1', 'Master'),
     'cmd_mame_exit': ('xdotool', 'key', 'Escape'),
 }
 
@@ -49,7 +49,7 @@ class RhasspyIntentProcessor():
         self.process_mame = await asyncio.create_subprocess_exec(*CONFIG['cmd_mame'], *args, stdout=asyncio.subprocess.PIPE)
 
     async def search(self, *args):
-        await self.cmd(
+        return await self.cmd(
             'docker', 'exec',
             '--workdir', '/_profiles/en/slots/mame/',
             'rhasspy',
