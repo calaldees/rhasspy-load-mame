@@ -1,7 +1,7 @@
 #!make
 include .env
 
-DOCKER_IMAGE:=mame_voice
+DOCKER_IMAGE:=rhasspy_load_mame
 
 help:
 	# help
@@ -39,18 +39,32 @@ search:
 		 grep -r \
 		 golden
 
-run:
-	docker run --rm \
-		--name rhasspy \
-		-p 12101:12101 \
-		-v "/etc/localtime:/etc/localtime:ro" \
-		-v "rhasspy_profiles:/profiles" \
-		--device /dev/snd:/dev/snd \
-		${DOCKER_IMAGE} \
-		
-		# --restart unless-stopped \
+start_service:
+	@if [ "$(docker ps | grep rhasspy)" = "" ]; then\
+		docker run \
+			--detach \
+			--rm \
+			--name rhasspy \
+			-p 12101:12101 \
+			-v "/etc/localtime:/etc/localtime:ro" \
+			-v "rhasspy_profiles:/profiles" \
+			--device /dev/snd:/dev/snd \
+			${DOCKER_IMAGE} \
+			;\
+	fi
+		# --restart unless-stopped
+stop_service:
+	docker stop rhasspy
+log:
+	docker log rhasspy
 
-websocket:
+
+install_lxde_startup:
+	echo "\nlxterminal -e \"make --directory $(PWD) websocket\" >> $(find ~/ -iwholename "*/lxsession/*/autostart" 2>/dev/null)
+
+/mnt/MAME/:
+	mount sdb1 /mnt
+websocket: start /mnt/MAME/
 	# Wait for rhasspy port 12101
 	while ! nc -z localhost 12101 ; do sleep 1 ; done
 	python3 websocket_mame.py
