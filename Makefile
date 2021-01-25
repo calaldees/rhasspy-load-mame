@@ -1,7 +1,7 @@
 #!make
 include .env
 
-DOCKER_IMAGE:=rhasspy_load_mame
+DOCKER_IMAGE:=rhasspy-load-mame
 
 help:
 	# help
@@ -40,7 +40,7 @@ search:
 		 golden
 
 start_service:
-	@if [ "$(docker ps | grep rhasspy)" = "" ]; then\
+	if [ "$$(docker ps | grep rhasspy)" = "" ]; then\
 		docker run \
 			--detach \
 			--rm \
@@ -60,11 +60,11 @@ log:
 
 
 install_lxde_startup:
-	echo "\nlxterminal -e \"make --directory $(PWD) websocket\" >> $(find ~/ -iwholename "*/lxsession/*/autostart" 2>/dev/null)
+	echo -e "\n@lxterminal -e make --directory $(PWD) websocket >> $$(find ~/ -iwholename "*/lxsession/*/autostart" 2>/dev/null)
 
 /mnt/MAME/:
-	mount sdb1 /mnt
-websocket: start /mnt/MAME/
+	sudo mount /dev/sdb1 /mnt
+websocket: start_service /mnt/MAME/
 	# Wait for rhasspy port 12101
 	while ! nc -z localhost 12101 ; do sleep 1 ; done
 	python3 websocket_mame.py
