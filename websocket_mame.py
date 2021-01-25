@@ -21,9 +21,11 @@ CONFIG_PI = {
 }
 
 CONFIG = {
+    'wakeword': 'porcupine',
     'cmd_mame': ('groovymame', ),
     'cmd_duck': ('amixer', 'sset', '-c', '1', 'Master'),
-    'cmd_mame_exit': ('xdotool', 'key', 'Escape'),
+    'duck_vol': '80%',
+    'cmd_reset_resolution': ('xrandr', '--output', 'VGA-0', '--mode', '640x480i')  # 640x480i setup already in GroovyArcade
 }
 
 
@@ -32,20 +34,17 @@ class RhasspyIntentProcessor():
     def __init__(self):
         self.process_mame = None
 
-    def close_mame(self):
+    async def close_mame(self):
         if self.process_mame:
-            if CONFIG.get('cmd_mame_exit'):  # If we have an explicit command to run to quit MAME, use that in preference - else just kill the process
-                self.cmd(CONFIG.get('cmd_mame_exit'))
-            else:
-                try:
-                    self.process_mame.kill()
-                    self.process_mame.wait()
-                except ProcessLookupError:
-                    pass
+            try:
+                self.process_mame.kill()
+                self.process_mame.wait()
+            except ProcessLookupError:
+                pass
             self.process_mame = None
 
     async def mame(self, *args):
-        self.close_mame()
+        await self.close_mame()
         self.process_mame = await asyncio.create_subprocess_exec(*CONFIG['cmd_mame'], *args, stdout=asyncio.subprocess.PIPE)
 
     async def search(self, *args):
@@ -70,8 +69,8 @@ class RhasspyIntentProcessor():
             print(data['slots']['rom'])
             await self.mame(*data['slots']['rom'].split('/'))
         if intent == 'MameExit':
-            self.close_mame()
-            #self.reset_resolution()
+            await self.close_mame()
+            await self.reset_resolution()
 
     async def cmd(self, *args):
         try:
@@ -83,18 +82,8 @@ class RhasspyIntentProcessor():
             return str(ex)
 
     async def reset_resolution(self):
-        # https://mme4crt.alphanudesign.co.uk/forum/showthread.php?tid=5
-        process = await asyncio.create_subprocess_shell('''
-            output="$(xrandr | grep " connected" | awk '{print$1})" && \
-            xrandr --newmode "700x480_59.941002" 13.849698 700 742 801 867 480 490 496 533 interlace -hsync -vsync && \
-            xrandr --addmode $output 700x480_59.941002 && \
-            xrandr --output $output --mode 700x480_59.941002 
-            ''',
-            stdout=asyncio.subprocess.PIPE,
-            #stderr=asyncio.subprocess.PIPE,
-        )
-        stdout, _ = await process.communicate()
-        return stdout.decode('utf8')
+        if CONFIG.get['cmd_reset_resolution']:
+            return await self.cmd(CONFIG.get['cmd_reset_resolution'])
 
     async def volume_duck(self, v):
         """
@@ -115,7 +104,7 @@ class RhasspyIntentProcessor():
                 return
             cmd_duck = ('amixer', 'sset', match.group(1))
         log.debug(f'duck {v}')
-        await self.cmd(*cmd_duck ,'50%' if v else '100%')
+        await self.cmd(*cmd_duck , CONFIG.get('duck_vol', '50%') if v else '100%')
 
 
     async def listen_for_intent(self, uri):
@@ -125,11 +114,12 @@ class RhasspyIntentProcessor():
                 await self.intent(json.loads(await websocket.recv()))
 
     async def listen_for_wake(self, uri):
+        print(f"Wake word: {CONFIG.get('wakeword')}")
         async with websockets.connect(uri) as websocket:
             log.info(uri)
             while True:
                 await websocket.recv()
-                print('wakeup')
+                print('Listening: say "load" or "search"')
                 await self.volume_duck(True)
 
     async def run(self, url):
