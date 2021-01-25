@@ -82,8 +82,8 @@ class RhasspyIntentProcessor():
             return str(ex)
 
     async def reset_resolution(self):
-        if CONFIG.get['cmd_reset_resolution']:
-            return await self.cmd(CONFIG.get['cmd_reset_resolution'])
+        if CONFIG.get('cmd_reset_resolution'):
+            return await self.cmd(CONFIG.get('cmd_reset_resolution'))
 
     async def volume_duck(self, v):
         """
