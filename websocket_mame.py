@@ -38,7 +38,7 @@ class RhasspyIntentProcessor():
         if self.process_mame:
             try:
                 self.process_mame.kill()
-                self.process_mame.wait()
+                await self.process_mame.wait()
             except ProcessLookupError:
                 pass
             self.process_mame = None
