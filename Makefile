@@ -64,7 +64,9 @@ install_lxde_startup:
 
 /mnt/MAME/:
 	sudo mount /dev/sdb1 /mnt
-websocket: start_service /mnt/MAME/
+websocket: start_service  ## /mnt/MAME/
 	# Wait for rhasspy port 12101
-	while ! nc -z localhost 12101 ; do sleep 1 ; done
-	python3 websocket_mame.py
+	# while ! nc -z localhost 12101 ; do sleep 1 ; done  # this dose not work as the port becoms active but dose not function
+	# TODO: sleep is a workaround
+	sleep 3
+	python3 websocket_mame.py || true

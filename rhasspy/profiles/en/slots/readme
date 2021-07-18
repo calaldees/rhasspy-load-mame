@@ -1,2 +1,5 @@
 # custom slots folder
 # https://rhasspy.readthedocs.io/en/latest/training/#slot-directories
+
+# Some games are not imported phonetically correctly
+# Manual overrides can be listed in `mame_manual_overrides` using standard rhaspy slot syntax
