@@ -60,7 +60,7 @@ log:
 
 
 install_lxde_startup:
-	echo -e "\n@lxterminal -e make --directory $(PWD) websocket >> $$(find ~/ -iwholename "*/lxsession/*/autostart" 2>/dev/null)
+	echo -e "\n@lxterminal -e make --directory $(PWD) websocket" >> $$(find ~/ -iwholename "*/lxsession/*/autostart" 2>/dev/null)
 
 /mnt/MAME/:
 	sudo mount /dev/sdb1 /mnt
