@@ -352,7 +352,7 @@ def prune_names_to_rom(iter_names):
     ...     ('Golden Axe: The Revenge of Death Adder (World)', 'ga2'),
     ... )
     >>> prune_names_to_rom(iter_names)
-    {'golden axe': 'goldnaxe', 'golden axe the duel': 'gaxeduel', 'the duel': 'gaxeduel', 'golden axe the revenge of death adder': 'ga2', 'the revenge of death adder': 'ga2'}
+    {'golden axe': 'goldnaxe', 'the duel': 'gaxeduel', 'golden axe the duel': 'gaxeduel', 'golden axe the revenge of death adder': 'ga2', 'the revenge of death adder': 'ga2'}
     """
     rom_to_names = {
         rom: normalise_name(name)
