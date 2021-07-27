@@ -23,7 +23,7 @@ CONFIG_PI = {
 CONFIG = {
     'wakeword': 'porcupine',
     'cmd_mame': ('groovymame', ),
-    'cmd_duck': ('amixer', 'sset', '-c', '1', 'Master'),
+    'cmd_duck': ('amixer', 'sset', '-c', '0', 'Master'),
     'duck_vol': '80%',
     'cmd_reset_resolution': ('xrandr', '--output', 'VGA-0', '--mode', '640x480i')  # 640x480i setup already in GroovyArcade
 }
@@ -56,9 +56,9 @@ class RhasspyIntentProcessor():
         )
 
     async def intent(self, data):
-        await self.volume_duck(False)
-        log.debug(pprint.pformat(data))
         os.system('cls||clear')  # clear terminal screen
+        log.debug(pprint.pformat(data))
+        await self.volume_duck(False)
         print(' '.join(data['raw_tokens']))
 
         intent = data['intent']['name']
@@ -67,6 +67,8 @@ class RhasspyIntentProcessor():
             print(await self.search(*data['raw_tokens'][1:]))
         if intent == 'MameLoad':
             print(data['slots']['rom'])
+            print('waiting for sound device to update volume')
+            await asyncio.sleep(1.5)
             await self.mame(*data['slots']['rom'].split('/'))
         if intent == 'MameExit':
             await self.close_mame()
