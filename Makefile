@@ -3,8 +3,11 @@ include .env
 
 DOCKER_IMAGE:=rhasspy-load-mame
 
-help:
-	# help
+.PHONY: help
+.DEFAULT_GOAL:=help
+help:	## display this help
+	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make \033[36m<target>\033[0m\n\nTargets:\n"} /^[a-zA-Z_-]+:.*?##/ { printf "  \033[36m%-8s\033[0m %s\n", $$1, $$2 } END{print ""}' $(MAKEFILE_LIST)
+
 
 rhasspy_example:  # https://rhasspy.readthedocs.io/en/latest/installation/#docker
 	docker run \
@@ -18,17 +21,17 @@ rhasspy_example:  # https://rhasspy.readthedocs.io/en/latest/installation/#docke
 			--user-profiles /profiles \
 			--profile en
 
-build:
+build:  ##
 	docker build \
 		--tag ${DOCKER_IMAGE} \
 		--build-arg MAME_GIT_TAG=${MAME_GIT_TAG} \
 	.
 
-test:
+test:  ##
 	pytest --doctest-modules -p no:cacheprovider \
 		parse_mame_xml_names.py
 
-shell:
+shell:  ##
 	docker run --rm -it --entrypoint /bin/bash ${DOCKER_IMAGE}
 
 search:
@@ -64,7 +67,7 @@ install_lxde_startup:
 
 /mnt/MAME/:
 	sudo mount /dev/sdb1 /mnt
-websocket: start_service /mnt/MAME/
+websocket: start_service /mnt/MAME/  ## start listening
 	# Wait for rhasspy port 12101
 	# while ! nc -z localhost 12101 ; do sleep 1 ; done  # this dose not work as the port becoms active but dose not function
 	# TODO: sleep is a workaround

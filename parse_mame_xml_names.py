@@ -10,6 +10,20 @@ from zipfile import ZipFile
 PATH_OUTPUT = 'slots/mame'
 
 
+def substring_in(sub, ll):
+    """
+    >>> EXCLUDE_SOURCEFILE = {
+    ...     'megaplay.cpp',
+    ...     'megatech.cpp',
+    ... }
+    >>> substring_in('sega/megatech.cpp', EXCLUDE_SOURCEFILE)
+    True
+    >>> substring_in('capcom/cps2.cpp', EXCLUDE_SOURCEFILE)
+    False
+    """
+    return bool(next((s for s in ll if s in sub), None))
+
+
 def _zip_filehandle(filename):
     zipfile = ZipFile(filename)
     _filename = zipfile.namelist()[0]
@@ -65,22 +79,22 @@ def iter_mame_names(get_xml_filehandle):
     r"""
     >>> data = '''<?xml version="1.0"?>
     ... <mame build="0.222 (unknown)" debug="no" mameconfig="10">
-    ...     <machine name="18wheelr" sourcefile="naomi.cpp" romof="naomi">
+    ...     <machine name="18wheelr" sourcefile="sega/naomi.cpp" romof="naomi">
     ...         <description>18 Wheeler (deluxe, Rev A)</description>
     ...     </machine>
-    ...     <machine name="18wheelro" sourcefile="naomi.cpp" cloneof="18wheelr" romof="18wheelr">
+    ...     <machine name="18wheelro" sourcefile="sega/naomi.cpp" cloneof="18wheelr" romof="18wheelr">
     ...         <description>18 Wheeler (deluxe)</description>
     ...     </machine>
-    ...     <machine name="naomi" sourcefile="naomi.cpp" isbios="yes">
+    ...     <machine name="naomi" sourcefile="sega/naomi.cpp" isbios="yes">
     ...         <description>Naomi BIOS</description>
     ...     </machine>
-    ...     <machine name="peip0028" sourcefile="peplus.cpp">
+    ...     <machine name="peip0028" sourcefile="igt/peplus.cpp">
     ...         <description>Player's Edge Plus (IP0028) Joker Poker - French</description>
     ...     </machine>
     ...     <machine name="machine" sourcefile="machine.cpp">
     ...         <softwarelist tag="pc_disk_list" name="ibm5150" status="original"/>
     ...     </machine>
-    ...     <machine name="sfa3b" sourcefile="cps2.cpp" cloneof="sfa3" romof="sfa3">.
+    ...     <machine name="sfa3b" sourcefile="capcom/cps2.cpp" cloneof="sfa3" romof="sfa3">.
     ...         <description>Street Fighter Alpha 3 (Brazil 980629)</description>.
     ...     </machine>
     ... </mame>'''.encode('utf8')
@@ -97,7 +111,7 @@ def iter_mame_names(get_xml_filehandle):
             machine.get('isdevice') == "yes" or \
             machine.get('runnable') == "no" or \
             machine.get('ismechanical') == "yes" or \
-            machine.get('sourcefile') in EXCLUDE_SOURCEFILE or \
+            substring_in(machine.get('sourcefile'), EXCLUDE_SOURCEFILE) or \
             isinstance(machine.find('softwarelist'), ET.Element)\
         :
             continue
@@ -351,8 +365,13 @@ def prune_names_to_rom(iter_names):
     ...     ('Golden Axe - The Duel (JUETL 950117 V1.000)', 'gaxeduel'),
     ...     ('Golden Axe: The Revenge of Death Adder (World)', 'ga2'),
     ... )
-    >>> prune_names_to_rom(iter_names)
-    {'golden axe': 'goldnaxe', 'the duel': 'gaxeduel', 'golden axe the duel': 'gaxeduel', 'the revenge of death adder': 'ga2', 'golden axe the revenge of death adder': 'ga2'}
+    >>> import pprint
+    >>> pprint.pprint(prune_names_to_rom(iter_names))
+    {'golden axe': 'goldnaxe',
+     'golden axe the duel': 'gaxeduel',
+     'golden axe the revenge of death adder': 'ga2',
+     'the duel': 'gaxeduel',
+     'the revenge of death adder': 'ga2'}
     """
     rom_to_names = {
         rom: normalise_name(name)
