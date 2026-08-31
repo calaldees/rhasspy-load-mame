@@ -72,7 +72,7 @@ install_lxde_startup:
 	sudo mount /dev/sdb1 /mnt
 .venv:
 	uv sync
-websocket: .venv #start_service /mnt/MAME/  ## start listening
+websocket: .venv start_service /mnt/MAME/  ## start listening
 	# Wait for rhasspy port 12101
 	# while ! nc -z localhost 12101 ; do sleep 1 ; done  # this dose not work as the port becoms active but dose not function
 	# TODO: sleep is a workaround
