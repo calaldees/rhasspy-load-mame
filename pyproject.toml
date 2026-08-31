@@ -1,0 +1,6 @@
+[project]
+name = "rhaspy-load-mame-websocket"
+version = "0.0.0"
+dependencies = [
+    "websockets",
+]

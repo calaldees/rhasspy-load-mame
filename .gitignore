@@ -3,4 +3,6 @@
 **/*.txt
 **/*.py[cod]
 
+uv.lock
+
 history/
