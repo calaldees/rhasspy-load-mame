@@ -15,8 +15,11 @@ def substring_in(sub, ll):
     >>> EXCLUDE_SOURCEFILE = {
     ...     'megaplay.cpp',
     ...     'megatech.cpp',
+    ...     'handheld/',
     ... }
     >>> substring_in('sega/megatech.cpp', EXCLUDE_SOURCEFILE)
+    True
+    >>> substring_in('handheld/hh_sm510.cpp', EXCLUDE_SOURCEFILE)
     True
     >>> substring_in('capcom/cps2.cpp', EXCLUDE_SOURCEFILE)
     False
@@ -74,6 +77,8 @@ EXCLUDE_SOURCEFILE = {
     'decocass.cpp',
     'spg2xx_jakks.cpp',  # TV game?
     'hh_hmcs40.cpp',  # LCD Donkey kong? coleco?
+
+    'handheld/',
 }
 def iter_mame_names(get_xml_filehandle):
     r"""
@@ -94,8 +99,11 @@ def iter_mame_names(get_xml_filehandle):
     ...     <machine name="machine" sourcefile="machine.cpp">
     ...         <softwarelist tag="pc_disk_list" name="ibm5150" status="original"/>
     ...     </machine>
-    ...     <machine name="sfa3b" sourcefile="capcom/cps2.cpp" cloneof="sfa3" romof="sfa3">.
-    ...         <description>Street Fighter Alpha 3 (Brazil 980629)</description>.
+    ...     <machine name="sfa3b" sourcefile="capcom/cps2.cpp" cloneof="sfa3" romof="sfa3">
+    ...         <description>Street Fighter Alpha 3 (Brazil 980629)</description>
+    ...     </machine>
+    ...     <machine name="taddams" sourcefile="handheld/hh_sm510.cpp">
+    ...         <description>The Addams Family (Tiger)</description>
     ...     </machine>
     ... </mame>'''.encode('utf8')
     >>> from unittest.mock import MagicMock

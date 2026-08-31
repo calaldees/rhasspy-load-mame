@@ -48,4 +48,4 @@ mame \
 -scalemode none \
 
 
-[mame.spludlow](https://mame.spludlow.co.uk/) - web accessible mame lists
+[spludlow.co.uk](https://data.spludlow.co.uk/mame/machine) - web accessible mame lists
